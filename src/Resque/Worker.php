@@ -307,6 +307,10 @@ class Worker
             // Fork into another process
             $this->child = pcntl_fork();
 
+            // Reset the redis connection to prevent forking issues
+            $this->redis->disconnect();
+            $this->redis->connect();
+
             // Returning -1 means error in forking
             if ($this->child == -1) {
                 Event::fire(Event::WORKER_FORK_ERROR, array($this, $job));
@@ -341,10 +345,6 @@ class Worker
                     }
                 }
             } else {
-                // Reset the redis connection to prevent forking issues
-                $this->redis->disconnect();
-                $this->redis->connect();
-
                 Event::fire(Event::WORKER_FORK_CHILD, array($this, $job, getmypid()));
 
                 $this->log('Running job <pop>'.$job.'</pop>', Logger::INFO);
